@@ -1,0 +1,8 @@
+x = 40 + 2
+print x
+
+fn add(a, b) {
+  a + b
+}
+
+print add(5, 7)
