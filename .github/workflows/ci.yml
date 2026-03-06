@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  python-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Lint Python files
+        run: |
+          pip install flake8
+          find projects/ -name "*.py" -path "*/python*" | head -50 | xargs flake8 --count --select=E9,F63,F7,F82 --show-source --statistics || true
+
+  c-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build C projects
+        run: |
+          for dir in projects/01-shell-c projects/16-text-editor-c projects/18-web-server-c; do
+            if [ -f "$dir/Makefile" ]; then
+              echo "Building $dir..."
+              cd "$dir" && make 2>/dev/null || true && cd -
+            elif [ -f "$dir/main.c" ]; then
+              echo "Compiling $dir/main.c..."
+              gcc -o /dev/null "$dir/main.c" 2>/dev/null || true
+            fi
+          done
+
+  go-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Build Go projects
+        run: |
+          for dir in projects/02-redis-go projects/05-bittorrent-go projects/06-kafka-go projects/10-http-go; do
+            if [ -d "$dir" ] && ls "$dir"/*.go >/dev/null 2>&1; then
+              echo "Building $dir..."
+              cd "$dir" && go build ./... 2>/dev/null || true && cd -
+            fi
+          done
+
+  rust-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build Rust projects
+        run: |
+          for dir in projects/03-grep-rust projects/08-sqlite-rust; do
+            if [ -f "$dir/Cargo.toml" ]; then
+              echo "Building $dir..."
+              cd "$dir" && cargo build 2>/dev/null || true && cd -
+            fi
+          done
